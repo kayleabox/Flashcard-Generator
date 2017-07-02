@@ -7,23 +7,23 @@ var fs           = require("fs");
 var questionsObj = {};
 
 var map = {
-    dadjokes:"jokes",
-    streetjokes:"jokes",
-    foodjokes:"jokes",
-    animaljokes:"jokes",
-    miscjokes:"jokes",
-    bodyjokes:"jokes",
-    weirdwords:"oneword"
+    dadjokes   : "jokes",
+    streetjokes: "jokes",
+    foodjokes  : "jokes",
+    animaljokes: "jokes",
+    miscjokes  : "jokes",
+    bodyjokes  : "jokes",
+    weirdwords : "words"
 }
 
 //information to create database connection
 var connection = mysql.createConnection({
-    host    :"localhost",
-    port    :"3306"     ,
+    host    : "localhost",
+    port    : "3306"     ,
 
-    user    :"root"     ,
-    password:"cabbage"  , 
-    database:"favorite_db"
+    user    : "root"     ,
+    password: "cabbage"  , 
+    database: "favorite_db"
 });
 
 //query the database
@@ -56,10 +56,10 @@ connection.connect(function(err){
 
 function getQuestions(username){
     inquirer.prompt([{
-        type:   "list",
-        name:   "theme",
-        message:"what topic would you like?",
-        choices:["weird words", "dad jokes", "food jokes", "animal jokes"]
+        type   : "list" ,
+        name   : "theme",  
+        message: "what topic would you like?",
+        choices: ["weird words", "dad jokes", "food jokes", "animal jokes"]
     }]).then(function(answer, err){
         var theme = answer.theme.replace(" ", "");
         fs.readFile(theme + ".txt", "utf-8", function (err, data) {
@@ -79,8 +79,6 @@ function getQuestions(username){
                 //console.log(questionsObj["question"+i].cloze);
             }
             var game = new Game(questionsObj, username, theme);
-            //play(game);
-            //startGame();
         });
     });
 
@@ -89,9 +87,9 @@ function getQuestions(username){
 function startGame(game){
     //console.log(count);
     inquirer.prompt([{
-    type:"confirm",
-    name:"play",
-    message:"would you like to play the game?"
+    type   : "confirm",
+    name   : "play"   ,
+    message: "would you like to play the game?"
     }]).then(function(answer, err){
         if(err) throw err;
         if(answer.play){
@@ -121,7 +119,21 @@ function Game(questionList, username, theme){
         this.updateStats = function(game){
             connection.query("UPDATE games SET ? WHERE ?", [{correct:game.correct, incorrect:game.incorrect}, {id: game.id}], 
             function(err, response){
-                //console.log("game "+game.id+" was updated");
+                //console.log("game "+game.id+" was updated"); //logs in the middle of startGame()
+                connection.query("SELECT * FROM games WHERE id =?", [game.id], function(err, response){
+                    if (err) throw err;
+                    console.log("you played " + response[0].theme + " and got " + response[0].correct + " right!");
+                    connection.query("SELECT MAX(correct) FROM games", function(err, response){
+                        if(err) throw err;
+                        if(game.correct >= response[0]["MAX(correct)"]){
+                            console.log("NICE! You have the highest score!");
+                        }
+                        else{
+                        console.log("The highest score was " + response[0]["MAX(correct)"]);
+                        }
+                        startGame();
+                    })
+                })
             })
         }
         this.logGame = function(username, game){
@@ -146,8 +158,8 @@ Game.prototype.play = function(game){
     var correctAnswer = game.cards["question" + game.count].cloze;
     var fulltext      = game.cards["question" + game.count].full;
     inquirer.prompt([{
-        type:    "input",
-        name:    "answer",
+        type   : "input",
+        name   : "answer",
         message: question
     }]).then(function (answer, err) {
         if (err) throw err;
@@ -176,16 +188,15 @@ Game.prototype.cardLoop = function(game){
     else {
         console.log("thanks! you got "+game.correct+" right! come by again sometime!");
         game.updateStats(game);
-        startGame(game);
-        //connection.query("")
+        //startGame(game);
     }
 }
 
 function getUserStatus(){
     inquirer.prompt([{
-        type:"confirm",
-        name:"playedBefore",
-        message:"have you played our game before?"
+        type   : "confirm",
+        name   : "playedBefore",
+        message: "have you played our game before?"
     }]).then(function(answer, err){
         if(err) throw err;
         if(answer.playedBefore){
@@ -199,13 +210,13 @@ function getUserStatus(){
 
 function signIn(){
     inquirer.prompt([{
-        type:    "input",
-        name:    "username",
+        type   : "input",
+        name   : "username",
         message: "enter your user name."
     },
     {
-        type:    "input",
-        name:    "password",
+        type   : "password",
+        name   : "password",
         message: "enter your password"
     }]).then(function (signIn, err) {
         connection.query("SELECT * FROM users pword WHERE userName=? AND pword=?", [signIn.username, signIn.password], 
@@ -226,34 +237,45 @@ function signIn(){
 
 function createUser(){
     inquirer.prompt([{
-        type:    "input",
-        name:    "username",
+        type   : "input",
+        name   : "username",
         message: "enter your user name."
     },
     {
-        type:    "input",
-        name:    "password",
+        type   : "password",
+        name   : "password",
+        message: "enter your password"
+    },
+    {
+        type   : "password",
+        name   : "confirm",
         message: "enter your password"
     }]).then(function (create, err) {
         if(err) throw err;
-        connection.query("SELECT * FROM users WHERE userName=? AND pword=?", [create.username, create.password], 
-        function(err, response){
-            if(err) throw err;
-            //console.log(response);
-            if(response[0] != undefined){
-                if( response[0].pword == create.password){
-                    console.log("you already have an account!")
-                    getQuestions(create.username);
+        if(create.username !== undefine && create.password !== undefined && create.password == create.confirm){
+            connection.query("SELECT * FROM users WHERE userName=? AND pword=?", [create.username, create.password], 
+            function(err, response){
+                if(err) throw err;
+                //console.log(response);
+                if(response[0] != undefined){
+                    if( response[0].pword == create.password){
+                        console.log("you already have an account!")
+                        getQuestions(create.username);
+                    }
                 }
-            }
-            else{
-                connection.query("INSERT INTO users SET ?", {userName:create.username, pword:create.password},
-                function(err, response){
-                    if(err) throw err;
-                    //console.log(response);
-                    getQuestions(create.username);
-                })
-            }
-        })
+                else{
+                    connection.query("INSERT INTO users SET ?", {userName:create.username, pword:create.password},
+                    function(err, response){
+                        if(err) throw err;
+                        //console.log(response);
+                        getQuestions(create.username);
+                    })
+                }
+            })
+        }
+        else {
+            console.log("All fields must be defined and passwords must match.")
+            createUser();
+        }
     })
 }
