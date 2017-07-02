@@ -3,6 +3,7 @@ var cloze        = require("./ClozeCard.js");
 var inquirer     = require("inquirer");
 var mysql        = require("mysql");
 var fs           = require("fs");
+                   require("console.table");
 
 var questionsObj = {};
 
@@ -25,6 +26,8 @@ var connection = mysql.createConnection({
     password: "cabbage"  , 
     database: "favorite_db"
 });
+
+console.table([{me:"pie", you: "cherry"}, {me:"pie", you:"peach"}]);
 
 //query the database
 connection.connect(function(err){
@@ -280,11 +283,9 @@ function createUser(){
 function printTable(game){
     connection.query("SELECT * FROM games WHERE theme = ?", [game.theme], function(err, response){
         if(err) throw err;
-        console.log("     STATS FOR "+game.theme.toUpperCase());
-        console.log("---------------------------------");
-        console.log("  User      Correct   Incorrect  ")
-        for(i=0; i<response.length; i++){
-            console.log(response[i].userName + "       " + response[i].correct + "         " + response[i].incorrect);
-        }
+        console.log("--------------------------------------------")
+        console.log("           STATS FOR "+game.theme.toUpperCase());
+        console.table(response);
+        console.log("--------------------------------------------");
     })
 }
