@@ -62,27 +62,49 @@ function getQuestions(username){
         type   : "list" ,
         name   : "theme",  
         message: "what topic would you like?",
-        choices: ["weird words", "dad jokes", "food jokes", "animal jokes", "street jokes", "misc jokes"]
+        choices: ["weird words", "dad jokes", "food jokes", "animal jokes", "muscles"]
     }]).then(function(answer, err){
-        var theme = answer.theme.replace(" ", "");
-        fs.readFile(theme + ".txt", "utf-8", function (err, data) {
-            if (err) throw err;
-            var dataArr = data.split("\n");
-            for (i = 0; i < dataArr.length; i++) {
-                var QandA = dataArr[i].split(": ");
-                var text  = QandA[0] + " " + QandA[1];
-                if(map[theme] === "jokes"){
-                    var cl = QandA[1].split(".");
-                    var text = QandA[0] + " " + cl[0];
-                    questionsObj["question" + i] = cloze(text, cl[0]);
+        if(answer.theme === "muscles"){
+            inquirer.prompt([{
+                type  : "list",
+                name  : "region",
+                message: "what area of the body should we cover?",
+                choices: ["Neck", "Back", "Leg"]
+            }]).then(function(answer, err){
+                if(err) throw err;
+                if(answer.region == "Neck"){
+                    for(i=0; i<muscles.Neck.Posterior.length; i++){
+                        var muscle = muscles.Neck.Posterior[i].Muscle;
+                        var action = muscles.Neck.Posterior[i].Action;
+                        var text = muscle+" "+action;
+                        questionsObj["question" + i] = cloze(text, muscle);
+                    }
                 }
-                else{
-                    questionsObj["question" + i] = cloze(text, QandA[0]);
+
+                var game = new Game(questionsObj, username, answer.area);
+            })
+        }
+        else{
+            var theme = answer.theme.replace(" ", "");
+            fs.readFile(theme + ".txt", "utf-8", function (err, data) {
+                if (err) throw err;
+                var dataArr = data.split("\n");
+                for (i = 0; i < dataArr.length; i++) {
+                    var QandA = dataArr[i].split(": ");
+                    var text  = QandA[0] + " " + QandA[1];
+                    if(map[theme] === "jokes"){
+                        var cl = QandA[1].split(".");
+                        var text = QandA[0] + " " + cl[0];
+                        questionsObj["question" + i] = cloze(text, cl[0]);
+                    }
+                    else{
+                        questionsObj["question" + i] = cloze(text, QandA[0]);
+                    }
                 }
-                //console.log(questionsObj["question"+i].cloze);
-            }
-            var game = new Game(questionsObj, username, theme);
-        });
+                
+                var game = new Game(questionsObj, username, theme);
+            });
+        }
     });
 
 }
